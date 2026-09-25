@@ -1,0 +1,40 @@
+name: softlimit-verify
+on:
+  workflow_dispatch:
+    inputs:
+      test_url:
+        description: "URL of db_blob_basic_test.cc overlay"
+        required: true
+        type: string
+      vs_url:
+        description: "URL of version_set.cc overlay (empty = upstream main)"
+        required: false
+        type: string
+      expect:
+        description: "red or green"
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout upstream rocksdb at pinned SHA
+        uses: actions/checkout@v4
+        with:
+          repository: facebook/rocksdb
+          ref: dbc2db52285c158183a2900fd2b2c33e76439643
+      - name: Overlay files
+        run: |
+          set -euo pipefail
+          curl -fsSL "${{ inputs.test_url }}" -o db/blob/db_blob_basic_test.cc
+          if [ -n "${{ inputs.vs_url }}" ]; then
+            curl -fsSL "${{ inputs.vs_url }}" -o db/version_set.cc
+          fi
+          git diff --stat
+      - name: Build db_blob_basic_test
+        run: make -j$(nproc) DEBUG_LEVEL=0 db_blob_basic_test
+      - name: Run blob MultiGet soft-limit regression tests
+        run: |
+          set -o pipefail
+          ./db_blob_basic_test --gtest_filter=DBBlobBasicTest.MultiGetBlob_ExceedSoftLimit:DBBlobBasicTest.MultiGetSoftLimit*:DBBlobBasicTest.MultiGetEntitySoftLimit*:DBBlobBasicTest.MultiGetBlobs:DBBlobBasicTest.MultiGetWithDirectIO 2>&1 | tee softlimit-test.log
