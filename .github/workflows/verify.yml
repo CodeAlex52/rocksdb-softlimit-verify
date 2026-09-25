@@ -33,7 +33,7 @@ jobs:
           fi
           git diff --stat
       - name: Build db_blob_basic_test
-        run: make -j$(nproc) DEBUG_LEVEL=0 db_blob_basic_test
+        run: make -j$(nproc) db_blob_basic_test
       - name: Run blob MultiGet soft-limit regression tests
         run: |
           set -o pipefail
