@@ -1,0 +1,1 @@
+RED/GREEN verification workspace (cloud-only, disposable).
